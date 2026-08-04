@@ -7,7 +7,6 @@ import os
 
 import numpy as np
 from onnx.backend.base import Backend, BackendRep
-from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
 
 def _opencv_worker(model_bytes, inputs, input_names, output_names, result_queue):
@@ -47,7 +46,15 @@ class OpenCVBackendRep(BackendRep):
         self.output_names = output_names
 
     def run(self, inputs, **kwargs):
-        """Execute inference in a spawned worker process."""
+        """Execute inference in a spawned worker process.
+
+        OpenCV's DNN module is a native C++ extension: an unsupported or
+        malformed model can crash the whole interpreter rather than raise, so
+        each run is isolated in a spawned process to keep a crash from taking
+        down the test session. Every failure mode -- a crash, a timeout, or an
+        error raised by OpenCV itself -- is reported as an error; nothing is
+        silently skipped.
+        """
         ctx = mp.get_context("spawn")
         q = ctx.Queue()
         p = ctx.Process(
@@ -59,14 +66,12 @@ class OpenCVBackendRep(BackendRep):
         if p.is_alive():
             p.terminate()
             p.join()
-            raise BackendIsNotSupposedToImplementIt("opencv process timed out")
+            raise RuntimeError("opencv process timed out")
         if p.exitcode != 0:
-            raise BackendIsNotSupposedToImplementIt(
-                f"opencv process crashed (exit code {p.exitcode})"
-            )
+            raise RuntimeError(f"opencv process crashed (exit code {p.exitcode})")
         status, result = q.get_nowait()
         if status == "error":
-            raise BackendIsNotSupposedToImplementIt(result)
+            raise RuntimeError(result)
         return result
 
 

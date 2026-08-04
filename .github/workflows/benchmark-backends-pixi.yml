@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: Run benchmarks (pixi)
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+  push:
+
+permissions: {}
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: onnx-reference
+            task: bench-onnx-reference
+            results: results/onnx-reference/stable
+            artifact: results-onnx-reference-stable
+          - environment: onnxruntime
+            task: bench-onnxruntime
+            results: results/ort/stable
+            artifact: results-ort-stable
+          - environment: tract
+            task: bench-tract
+            results: results/tract/stable
+            artifact: results-tract-stable
+          - environment: opencv
+            task: bench-opencv
+            results: results/opencv/stable
+            artifact: results-opencv-stable
+          - environment: rten
+            task: bench-rten
+            results: results/rten/stable
+            artifact: results-rten-stable
+          - environment: onnxruntime-openvino
+            task: bench-onnxruntime-openvino
+            results: results/onnxruntime-openvino/stable
+            artifact: results-onnxruntime-openvino-stable
+          - environment: emx-onnx-cgen
+            task: bench-emx-onnx-cgen
+            results: results/emx-onnx-cgen/stable
+            artifact: results-emx-onnx-cgen-stable
+          - environment: jaxonnxruntime
+            task: bench-jaxonnxruntime
+            results: results/jaxonnxruntime/stable
+            artifact: results-jaxonnxruntime-stable
+          - environment: jaxonnxruntime-dev
+            task: bench-jaxonnxruntime-dev
+            results: results/jaxonnxruntime/development
+            artifact: results-jaxonnxruntime-dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+        with:
+          environments: ${{ matrix.environment }}
+
+      # A failing suite still writes report.json, so keep going and upload it.
+      - name: Run benchmark
+        run: pixi run -e ${{ matrix.environment }} ${{ matrix.task }} || true
+
+      - name: Upload results
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.results }}/

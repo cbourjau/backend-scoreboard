@@ -1,0 +1,158 @@
+[workspace]
+name = "onnx-backend-scoreboard"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64", { name = "osx-arm64-macos14", platform = "osx-arm64", macos = "14.0" }]
+
+[feature.harness.dependencies]
+python = "*"
+pytest = ">=9.0.3"
+tabulate = ">=0.10.0"
+pyyaml = ">=6.0.3"
+
+[feature.onnx.dependencies]
+onnx = "1.22.*"
+
+[feature.tooling.dependencies]
+jinja2 = ">=3.1.6"
+markupsafe = ">=3.0.3"
+nodejs = ">=24"
+prek = ">=0.4.12"
+python = ">=3.12"
+ruff = "*"
+
+[feature.tooling.tasks]
+gen-website = "python website-generator/generator.py --config ./setup/config.json"
+lint = { cmd = "ruff check test website-generator test/backends && ruff format --check test website-generator test/backends" }
+test = "pytest test"
+
+[feature.onnx-reference.dependencies]
+numpy = "*"
+
+[feature.onnx-reference.tasks]
+bench-onnx-reference = { cmd = "mkdir -p results/onnx-reference/stable && pytest test/test_backend.py --onnx_backend=backends.onnx_reference.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/onnx-reference/stable" } }
+
+[feature.onnxruntime]
+platforms = ["osx-arm64-macos14", "linux-64"]
+[feature.onnxruntime.dependencies]
+numpy = "*"
+[feature.onnxruntime.pypi-dependencies]
+onnxruntime = ">=1.28"
+
+[feature.onnxruntime.tasks]
+bench-onnxruntime = { cmd = "mkdir -p results/ort/stable && pytest test/test_backend.py --onnx_backend=onnxruntime.backend.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/ort/stable" } }
+
+[feature.tract.dependencies]
+python = ">=3.12"
+numpy = "*"
+
+[feature.tract.pypi-dependencies]
+tract = "*"
+
+[feature.tract.tasks]
+bench-tract = { cmd = "mkdir -p results/tract/stable && pytest test/test_backend.py --onnx_backend=backends.tract.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/tract/stable" } }
+
+[feature.opencv.dependencies]
+python = ">=3.12"
+numpy = "*"
+
+[feature.opencv.pypi-dependencies]
+opencv-python-headless = "*"
+
+[feature.opencv.tasks]
+bench-opencv = { cmd = "mkdir -p results/opencv/stable && pytest test/test_backend.py --onnx_backend=backends.opencv.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/opencv/stable" } }
+
+[feature.rten.dependencies]
+python = ">=3.12"
+
+[feature.rten.pypi-dependencies]
+rten-convert = "*"
+
+[feature.rten.tasks]
+bench-rten = { cmd = "mkdir -p results/rten/stable && pytest test/test_backend.py --onnx_backend=backends.rten.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/rten/stable" } }
+
+[feature.onnxruntime-openvino.dependencies]
+# onnxruntime-openvino wheels top out at cp313; cap Python below 3.14.
+python = ">=3.12,<3.14"
+numpy = "*"
+
+[feature.onnxruntime-openvino.pypi-dependencies]
+onnxruntime-openvino = "*"
+
+[feature.onnxruntime-openvino]
+platforms = ["linux-64"]
+
+[feature.onnxruntime-openvino.tasks]
+bench-onnxruntime-openvino = { cmd = "mkdir -p results/onnxruntime-openvino/stable && pytest test/test_backend.py --onnx_backend=backends.onnxruntime_openvino.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/onnxruntime-openvino/stable" } }
+
+[feature.emx-onnx-cgen.dependencies]
+python = ">=3.12"
+numpy = "*"
+cxx-compiler = "*"
+pkg-config = "*"
+libjpeg-turbo = "*"
+libwebp = "*"
+libtiff = "*"
+openjpeg = "*"
+
+[feature.emx-onnx-cgen.pypi-dependencies]
+emx-onnx-cgen = "*"
+
+[feature.emx-onnx-cgen.tasks]
+bench-emx-onnx-cgen = { cmd = "mkdir -p results/emx-onnx-cgen/stable && pytest test/test_backend.py --onnx_backend=emx_onnx_cgen.onnx_backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/emx-onnx-cgen/stable" } }
+
+[feature.jaxonnxruntime.dependencies]
+python = ">=3.12"
+numpy = "*"
+jax = "*"
+jaxlib = "*"
+absl-py = "*"
+jaxtyping = "*"
+chex = "*"
+
+[feature.jaxonnxruntime.pypi-dependencies]
+jaxonnxruntime = "*"
+
+[feature.jaxonnxruntime.activation.env]
+# Required by jaxonnxruntime, per its tests/onnx_ops_test.py. Values must be strings.
+JAX_DEFAULT_DTYPE_BITS = "64"
+JAX_ENABLE_X64 = "True"
+JAX_NUMPY_RANK_PROMOTION = "warn"
+JAXORT_ONLY_ALLOW_INITIALIZERS_AS_STATIC_ARGS = "0"
+JAXORT_NONZERO_USE_FULLY_PADDING = "1"
+
+[feature.jaxonnxruntime.tasks]
+bench-jaxonnxruntime = { cmd = "mkdir -p results/jaxonnxruntime/stable && pytest test/test_backend.py --onnx_backend=jaxonnxruntime.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/jaxonnxruntime/stable" } }
+
+[feature.jaxonnxruntime-dev.dependencies]
+python = ">=3.12"
+numpy = "*"
+jax = "*"
+jaxlib = "*"
+absl-py = "*"
+jaxtyping = "*"
+chex = "*"
+
+[feature.jaxonnxruntime-dev.pypi-dependencies]
+jaxonnxruntime = { git = "https://github.com/google/jaxonnxruntime.git", branch = "main" }
+
+[feature.jaxonnxruntime-dev.activation.env]
+JAX_DEFAULT_DTYPE_BITS = "64"
+JAX_ENABLE_X64 = "True"
+JAX_NUMPY_RANK_PROMOTION = "warn"
+JAXORT_ONLY_ALLOW_INITIALIZERS_AS_STATIC_ARGS = "0"
+JAXORT_NONZERO_USE_FULLY_PADDING = "1"
+
+[feature.jaxonnxruntime-dev.tasks]
+bench-jaxonnxruntime-dev = { cmd = "mkdir -p results/jaxonnxruntime/development && pytest test/test_backend.py --onnx_backend=jaxonnxruntime.backend -k 'not _cuda' -v", env = { RESULTS_DIR = "results/jaxonnxruntime/development" } }
+
+[environments]
+tooling = { features = ["tooling", "harness"] }
+onnx-reference = { features = ["onnx-reference", "onnx", "harness"], no-default-feature = true }
+onnxruntime = { features = ["onnxruntime", "onnx", "harness"], no-default-feature = true }
+tract = { features = ["tract", "onnx", "harness"], no-default-feature = true }
+opencv = { features = ["opencv", "onnx", "harness"], no-default-feature = true }
+rten = { features = ["rten", "onnx", "harness"], no-default-feature = true }
+onnxruntime-openvino = { features = ["onnxruntime-openvino", "onnx", "harness"], no-default-feature = true }
+emx-onnx-cgen = { features = ["emx-onnx-cgen", "onnx", "harness"], no-default-feature = true }
+jaxonnxruntime = { features = ["jaxonnxruntime", "onnx", "harness"], no-default-feature = true }
+jaxonnxruntime-dev = { features = ["jaxonnxruntime-dev", "onnx", "harness"], no-default-feature = true }

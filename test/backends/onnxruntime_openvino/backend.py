@@ -13,7 +13,6 @@ import unittest
 
 import numpy as np
 from onnx.backend.base import Backend, BackendRep
-from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
 
 _TIMEOUT = int(os.getenv("OVEP_TEST_TIMEOUT", "120"))
@@ -68,7 +67,15 @@ class OrtOpenVinoBackendRep(BackendRep):
         self.model_bytes = model_bytes
 
     def run(self, inputs, **kwargs):
-        """Execute inference in a spawned worker process."""
+        """Execute inference in a spawned worker process.
+
+        ONNX Runtime with the OpenVINO EP is a native extension: an unsupported
+        or malformed model can ``abort()`` the whole interpreter rather than
+        raise, so each run is isolated in a spawned process to keep a crash from
+        taking down the test session. Every failure mode -- a crash, a timeout,
+        no output, or an error raised by the worker -- is reported as an error;
+        nothing is silently skipped.
+        """
         ctx = mp.get_context("spawn")
         q = ctx.Queue()
         p = ctx.Process(
@@ -80,20 +87,16 @@ class OrtOpenVinoBackendRep(BackendRep):
         if p.is_alive():
             p.terminate()
             p.join()
-            raise BackendIsNotSupposedToImplementIt(
-                "onnxruntime-openvino process timed out"
-            )
+            raise RuntimeError("onnxruntime-openvino process timed out")
         if p.exitcode != 0:
-            raise BackendIsNotSupposedToImplementIt(
+            raise RuntimeError(
                 f"onnxruntime-openvino process crashed (exit code {p.exitcode})"
             )
         if q.empty():
-            raise BackendIsNotSupposedToImplementIt(
-                "onnxruntime-openvino worker produced no output"
-            )
+            raise RuntimeError("onnxruntime-openvino worker produced no output")
         status, result = q.get_nowait()
         if status == "error":
-            raise BackendIsNotSupposedToImplementIt(result)
+            raise RuntimeError(result)
         return result
 
 

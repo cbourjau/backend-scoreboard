@@ -7,7 +7,6 @@ import os
 
 import numpy as np
 from onnx.backend.base import Backend, BackendRep
-from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
 
 def _tract_worker(model_bytes, inputs, output_count, result_queue):
@@ -20,7 +19,7 @@ def _tract_worker(model_bytes, inputs, output_count, result_queue):
         f.write(model_bytes)
         path = f.name
     try:
-        runnable = _tract.onnx().model_for_path(path).into_optimized().into_runnable()
+        runnable = _tract.onnx().load(path).into_model().into_runnable()
         tract_inputs = [np.asarray(inp) for inp in inputs]
         results = runnable.run(tract_inputs)
         output = [results[i].to_numpy() for i in range(output_count)]
@@ -40,7 +39,14 @@ class TractBackendRep(BackendRep):
         self.output_count = output_count
 
     def run(self, inputs, **kwargs):
-        """Execute inference in a spawned worker process."""
+        """Execute inference in a spawned worker process.
+
+        tract is a Rust extension: an unsupported or malformed model can
+        ``abort()`` the whole interpreter rather than raise, so each run is
+        isolated in a spawned process to keep a crash from taking down the test
+        session. Every failure mode -- a crash, a timeout, or an error raised by
+        tract itself -- is reported as an error; nothing is silently skipped.
+        """
         ctx = mp.get_context("spawn")
         q = ctx.Queue()
         p = ctx.Process(
@@ -52,14 +58,12 @@ class TractBackendRep(BackendRep):
         if p.is_alive():
             p.terminate()
             p.join()
-            raise BackendIsNotSupposedToImplementIt("tract process timed out")
+            raise RuntimeError("tract process timed out")
         if p.exitcode != 0:
-            raise BackendIsNotSupposedToImplementIt(
-                f"tract process crashed (exit code {p.exitcode})"
-            )
+            raise RuntimeError(f"tract process crashed (exit code {p.exitcode})")
         status, result = q.get_nowait()
         if status == "error":
-            raise BackendIsNotSupposedToImplementIt(result)
+            raise RuntimeError(result)
         return result
 
 
