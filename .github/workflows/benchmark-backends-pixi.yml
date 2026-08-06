@@ -71,9 +71,81 @@ jobs:
       - name: Run benchmark
         run: pixi run -e ${{ matrix.environment }} ${{ matrix.task }} || true
 
+      # Upload the whole `results/` subtree (not just the leaf dir) so the
+      # per-backend nesting is preserved inside the artifact. The publish job
+      # then reassembles the full tree with a single merge-multiple download.
       - name: Upload results
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.results }}/
+          path: results/
+
+  # Reassemble every backend's results into the `benchmark-results` branch,
+  # folding in trend history, so `update-website.yml` can render the board.
+  publish:
+    runs-on: ubuntu-latest
+    needs: bench
+    permissions:
+      contents: write
+    # Publish even if some backend jobs failed, so the board still shows the
+    # results that did succeed (missing artifacts are simply absent from the tree).
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      # merge_trends.py reads the previous history from the benchmark-results
+      # branch (HEAD after checkout), so preserve the script + config from the
+      # source branch before switching away from it.
+      - name: Preserve merge inputs
+        run: |
+          mkdir -p /tmp/scoreboard-merge
+          cp scripts/merge_trends.py /tmp/scoreboard-merge/merge_trends.py
+          cp setup/config.json /tmp/scoreboard-merge/config.json
+
+      - name: Switch to benchmark-results branch
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git fetch origin
+          if git ls-remote --exit-code --heads origin benchmark-results > /dev/null 2>&1; then
+            git checkout -B benchmark-results origin/benchmark-results
+          else
+            git checkout --orphan benchmark-results
+            git rm -rf --cached . 2>/dev/null || true
+          fi
+
+      # A single merge-multiple download overlays every backend's uploaded
+      # `results/` subtree back into one `results/` directory, no per-backend
+      # enumeration to drift from the matrix above.
+      - name: Download benchmark results
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          pattern: results-*
+          path: results
+          merge-multiple: true
+
+      - name: Merge trend history
+        run: python3 /tmp/scoreboard-merge/merge_trends.py --config /tmp/scoreboard-merge/config.json --base-ref HEAD
+
+      # Checkout ran with persist-credentials: false, so authenticate the push
+      # explicitly via the job's contents: write GITHUB_TOKEN.
+      - name: Deploy results
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add results
+          if ! git diff --cached --quiet; then
+            git commit -s -m "Scoreboard results [skip ci]"
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:benchmark-results
+          else
+            echo "No changes to commit"
+          fi
