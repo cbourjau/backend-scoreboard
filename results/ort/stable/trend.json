@@ -15,5 +15,22 @@
                 "version": "1.23.2"
             }
         ]
+    },
+    {
+        "date": "08/15/2026 00:27:41",
+        "failed": 281,
+        "passed": 1571,
+        "skipped": 62,
+        "total_ops": 204,
+        "versions": [
+            {
+                "name": "onnx",
+                "version": "1.17.0"
+            },
+            {
+                "name": "onnxruntime",
+                "version": "1.23.2"
+            }
+        ]
     }
 ]
