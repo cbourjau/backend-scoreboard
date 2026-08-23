@@ -1,5 +1,5 @@
 {
-    "date": "08/22/2026 00:14:42",
+    "date": "08/23/2026 00:32:36",
     "failed": [
         "OnnxBackendNodeModelTest::test_bernoulli_cpu",
         "OnnxBackendNodeModelTest::test_bernoulli_double_cpu",
