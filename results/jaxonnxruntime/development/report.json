@@ -1484,7 +1484,7 @@
         "OnnxBackendNodeModelTest::test_reduce_l2_keep_dims_example_expanded_cpu",
         "OnnxBackendNodeModelTest::test_reduce_l2_keep_dims_random_expanded_cpu",
         "OnnxBackendNodeModelTest::test_reduce_l2_negative_axes_keep_dims_example_expanded_cpu",
-        "OnnxBackendNodeModelTest::test_reduce_l2_negative_axedsigmoid_default_expanded_ver18_cpu",
+        "OnnxBackendNodeModelTest::test_reduce_l2_negative_axrdsigmoid_default_expanded_ver18_cpu",
         "OnnxBackendNodeModelTest::test_hardsigmoid_example_expanded_ver18_cpu",
         "OnnxBackendNodeModelTest::test_hardsigmoid_expanded_ver18_cpu",
         "OnnxBackendNodeModelTest::test_identity_opt_cpu",
