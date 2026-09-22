@@ -1769,7 +1769,16 @@
         "OnnxBackendSimpleModelTest::test_single_relu_model_cpu"
     ],
     "skipped": []
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       xBackendNodeModelTest::test_sum_two_inputs_cpu",
+} "OnnxBackendNodeModelTest::test_sub_example_cpu",
+        "OnnxBackendNodeModelTest::test_sub_int16_cpu",
+        "OnnxBackendNodeModelTest::test_sub_int8_cpu",
+        "OnnxBackendNodeModelTest::test_sub_uint16_cpu",
+        "OnnxBackendNodeModelTest::test_sub_uint32_cpu",
+        "OnnxBackendNodeModelTest::test_sub_uint64_cpu",
+        "OnnxBackendNodeModelTest::test_sub_uint8_cpu",
+        "OnnxBackendNodeModelTest::test_sum_example_cpu",
+        "OnnxBackendNodeModelTest::test_sum_one_input_cpu",
+        "OnnxBackendNodeModelTest::test_sum_two_inputs_cpu",
         "OnnxBackendNodeModelTest::test_tanh_cpu",
         "OnnxBackendNodeModelTest::test_tanh_example_cpu",
         "OnnxBackendNodeModelTest::test_thresholdedrelu_default_expanded_ver18_cpu",
