@@ -1,9 +1,7 @@
 {
-    "date": "11/14/2025 00:36:17",
-    "failed": [],
-    "passed": [],
-    "skipped": []
-}_acos_cpu",
+    "date": "09/27/2026 00:43:25",
+    "failed": [
+        "OnnxBackendNodeModelTest::test_acos_cpu",
         "OnnxBackendNodeModelTest::test_acos_example_cpu",
         "OnnxBackendNodeModelTest::test_acosh_cpu",
         "OnnxBackendNodeModelTest::test_acosh_example_cpu",
